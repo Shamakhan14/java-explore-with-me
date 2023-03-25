@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter;
 public class EndpointHitMapper {
 
     public static EndpointHit mapDtoToHit(EndpointHitDto endpointHitDto) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         EndpointHit endpointHit = new EndpointHit();
         endpointHit.setApp(endpointHitDto.getApp());
         endpointHit.setUri(endpointHitDto.getUri());

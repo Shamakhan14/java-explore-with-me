@@ -6,10 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -17,12 +14,13 @@ import java.util.Map;
 public class StatsService {
     private final StatsRepository repository;
 
+    @Transactional
     public void addHit(EndpointHitDto endpointHitDto) {
         repository.save(EndpointHitMapper.mapDtoToHit(endpointHitDto));
     }
 
     public List<ViewStatsDto> get(String start, String end, String[] uris, Boolean unique) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         LocalDateTime formattedStart = LocalDateTime.parse(start, formatter);
         LocalDateTime formattedEnd = LocalDateTime.parse(end, formatter);
         List<EndpointHit> hits = repository.getHits(uris, formattedStart, formattedEnd);
@@ -50,6 +48,8 @@ public class StatsService {
                 }
             }
         }
-        return new ArrayList<>(result.values());
+        List<ViewStatsDto> stats = new ArrayList<>(result.values());
+        stats.sort(Comparator.comparing(ViewStatsDto::getHits).reversed());
+        return stats;
     }
 }
