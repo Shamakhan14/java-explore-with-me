@@ -10,8 +10,8 @@ services:
       - stats-db
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/shareit
-      - SPRING.DATASOURCE.USERNAME=root
-      - SPRING.DATASOURCE.PASSWORD=123
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123
 
   stats-db:
     image: postgres:14-alpine
