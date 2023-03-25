@@ -9,7 +9,7 @@ services:
     depends_on:
       - stats-db
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/shareit
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/explorewithme
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123
 
@@ -17,7 +17,7 @@ services:
     image: postgres:14-alpine
     container_name: postgres_db
     environment:
-      - POSTGRES_DB=shareit
+      - POSTGRES_DB=explorewithme
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=123
 
@@ -31,7 +31,7 @@ services:
       - ewm-db
       - stats-server
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5433/shareit
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5433/explorewithme
 
 
   ewm-db:
