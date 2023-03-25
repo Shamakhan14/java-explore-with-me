@@ -16,6 +16,7 @@ services:
   stats-db:
     image: postgres:14-alpine
     container_name: postgres_db
+    environment:
       - POSTGRES_DB=shareit
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=123
@@ -36,6 +37,7 @@ services:
   ewm-db:
     image: postgres:14-alpine
     container_name: ewm_db
+    environment:
       - POSTGRES_DB=main
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=123
