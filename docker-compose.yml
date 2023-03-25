@@ -21,8 +21,21 @@ services:
       - POSTGRES_PASSWORD=123
 
   ewm-service:
+    build: main
+    image: main
+    container_name: main_container
     ports:
       - "8080:8080"
+    depends_on:
+      - ewm-db
+      - stats-server
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5433/shareit
+
 
   ewm-db:
     image: postgres:14-alpine
+    container_name: ewm_db
+      - POSTGRES_DB=main
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=123
