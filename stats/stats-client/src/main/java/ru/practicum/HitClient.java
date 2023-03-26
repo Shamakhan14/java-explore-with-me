@@ -30,9 +30,14 @@ public class HitClient {
             parameters.put("uris", uris);
         }
         parameters.put("unique", unique);
-        HttpEntity<ViewStatsDto[]> requestEntity = new HttpEntity<>(null);
+        HttpEntity<String> requestEntity = new HttpEntity<>("");
         ResponseEntity<ViewStatsDto[]> response = rest
                 .exchange(serverUrl + "stats", HttpMethod.GET, requestEntity, ViewStatsDto[].class, parameters);
-        return Arrays.asList(response.getBody());
+        ViewStatsDto[] result = response.getBody();
+        if (result == null) {
+            return null;
+        } else {
+            return Arrays.asList(result);
+        }
     }
 }
