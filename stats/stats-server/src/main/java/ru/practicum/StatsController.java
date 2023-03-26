@@ -26,9 +26,8 @@ public class StatsController {
     @GetMapping("/stats")
     public List<ViewStatsDto> get(@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
                                   @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
-                                  @RequestParam(required = false) String[] uris,
+                                  @RequestParam(required = false) List<String> uris,
                                   @RequestParam(defaultValue = "false") Boolean unique) {
-        if (uris.length == 0) return Collections.emptyList();
         List<ViewStatsDto> response = service.get(start, end, uris, unique);
         log.info("Статистика собрана.");
         return response;
