@@ -19,9 +19,16 @@ public class StatsService {
     }
 
     public List<ViewStatsDto> get(LocalDateTime start, LocalDateTime end, String[] uris, Boolean unique) {
-        if (unique) {
-            return repository.getStatsUnique(start, end, Arrays.asList(uris));
+        if (uris != null) {
+            if (unique) {
+                return repository.getStatsUnique(start, end, Arrays.asList(uris));
+            }
+            return repository.getStatsNotUnique(start, end, Arrays.asList(uris));
+        } else {
+            if (unique) {
+                return repository.getStatsUniqueUrisNull(start, end);
+            }
+            return repository.getStatsNotUniqueUrisNull(start, end);
         }
-        return repository.getStatsNotUnique(start, end, Arrays.asList(uris));
     }
 }

@@ -28,7 +28,7 @@ public class StatsController {
                                   @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
                                   @RequestParam(required = false) String[] uris,
                                   @RequestParam(defaultValue = "false") Boolean unique) {
-        if (uris == null || uris.length == 0) return Collections.emptyList();
+        if (uris.length == 0) return Collections.emptyList();
         List<ViewStatsDto> response = service.get(start, end, uris, unique);
         log.info("Статистика собрана.");
         return response;
