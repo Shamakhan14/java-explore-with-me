@@ -1,5 +1,6 @@
 package ru.practicum;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
@@ -11,10 +12,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@RequiredArgsConstructor
 public class HitClient {
-    private final RestTemplate rest = new RestTemplate();
+    private final RestTemplate rest;
     @Value("${client.url}")
     private String serverUrl;
+    static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public void addHit(EndpointHitDto endpointHitDto) {
         HttpEntity<EndpointHitDto> requestEntity = new HttpEntity<>(endpointHitDto);
@@ -23,9 +26,8 @@ public class HitClient {
 
     public List<ViewStatsDto> get(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
         Map<String, Object> parameters = new HashMap<>();
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        parameters.put("start", start.format(dateTimeFormatter));
-        parameters.put("end", end.format(dateTimeFormatter));
+        parameters.put("start", start.format(DATE_TIME_FORMATTER));
+        parameters.put("end", end.format(DATE_TIME_FORMATTER));
         if (!uris.isEmpty()) {
             parameters.put("uris", uris);
         }
@@ -35,7 +37,7 @@ public class HitClient {
                 .exchange(serverUrl + "stats", HttpMethod.GET, requestEntity, ViewStatsDto[].class, parameters);
         ViewStatsDto[] result = response.getBody();
         if (result == null) {
-            return null;
+            return List.of();
         } else {
             return Arrays.asList(result);
         }
