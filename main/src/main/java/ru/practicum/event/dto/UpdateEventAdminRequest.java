@@ -24,7 +24,7 @@ public class UpdateEventAdminRequest {
     private Boolean paid;
     private Integer participantLimit;
     private Boolean requestModeration;
-    private StateAction stateAction;
+    private AdminStateAction stateAction;
     @Size(min = 3, max = 120, message = "Field: title. Error: size must be between 3 and 120 characters.")
     private String title;
 }

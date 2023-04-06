@@ -43,7 +43,7 @@ public class CategoryService {
         categoryRepository.findById(catId)
                 .orElseThrow(() -> new CategoryNotFoundException("Category with id = " + catId + " was not found."));
         List<Event> events = eventRepository.findByCategory_Id(catId);
-        if (events.isEmpty()) {
+        if (!events.isEmpty()) {
             throw new ForbiddenCategoryDeleteException("The category is not empty.");
         }
         categoryRepository.deleteById(catId);

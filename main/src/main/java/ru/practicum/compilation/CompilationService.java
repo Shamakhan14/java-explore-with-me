@@ -50,7 +50,7 @@ public class CompilationService {
             referenceRepository.save(reference);
         }
         CompilationDto compilationDto = CompilationMapper.mapCompilationToCompilationDto(compilation);
-        if (newCompilationDto.getEvents() == null) {
+        if (newCompilationDto.getEvents() == null || newCompilationDto.getEvents().isEmpty()) {
             compilationDto.setEvents(List.of());
             return compilationDto;
         }
@@ -59,8 +59,8 @@ public class CompilationService {
         for (Event event: events) {
             uris.add(URI + event.getId());
         }
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.MIN.format(DATE_TIME_FORMATTER),
-                LocalDateTime.MAX.format(DATE_TIME_FORMATTER), uris, false);
+        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
+                LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
         Map<Long, Long> hits = new HashMap<>();
         for (ViewStatsDto viewStatsDto: stats) {
             Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
@@ -89,7 +89,7 @@ public class CompilationService {
         if (request.getPinned() != null) {
             compilation.setPinned(request.getPinned());
         }
-        if (!request.getTitle().isBlank()) {
+        if (request.getTitle() != null && !request.getTitle().isBlank()) {
             compilation.setTitle(request.getTitle());
         }
         if (request.getEvents() != null && !request.getEvents().isEmpty()) {
@@ -107,8 +107,8 @@ public class CompilationService {
         for (Event event: events) {
             uris.add(URI + event.getId());
         }
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.MIN.format(DATE_TIME_FORMATTER),
-                LocalDateTime.MAX.format(DATE_TIME_FORMATTER), uris, false);
+        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
+                LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
         Map<Long, Long> hits = new HashMap<>();
         for (ViewStatsDto viewStatsDto: stats) {
             Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
@@ -129,23 +129,27 @@ public class CompilationService {
         for (Compilation compilation: compilations) {
             CompilationDto compilationDto = CompilationMapper.mapCompilationToCompilationDto(compilation);
             List<Long> eventIds = referenceRepository.findEventIdsByCompilationId(compilation.getId());
-            List<Event> events = eventRepository.findByIdIn(eventIds);
-            List<String> uris = new ArrayList<>();
-            for (Event event: events) {
-                uris.add(URI + event.getId());
+            if (!eventIds.isEmpty()) {
+                List<Event> events = eventRepository.findByIdIn(eventIds);
+                List<String> uris = new ArrayList<>();
+                for (Event event : events) {
+                    uris.add(URI + event.getId());
+                }
+                List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
+                        LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
+                Map<Long, Long> hits = new HashMap<>();
+                for (ViewStatsDto viewStatsDto : stats) {
+                    Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
+                    hits.put(id, viewStatsDto.getHits());
+                }
+                List<EventShortDto> eventShortDtos = new ArrayList<>();
+                for (Event event : events) {
+                    eventShortDtos.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId())));
+                }
+                compilationDto.setEvents(eventShortDtos);
+            } else {
+                compilationDto.setEvents(List.of());
             }
-            List<ViewStatsDto> stats = hitClient.get(LocalDateTime.MIN.format(DATE_TIME_FORMATTER),
-                    LocalDateTime.MAX.format(DATE_TIME_FORMATTER), uris, false);
-            Map<Long, Long> hits = new HashMap<>();
-            for (ViewStatsDto viewStatsDto: stats) {
-                Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
-                hits.put(id, viewStatsDto.getHits());
-            }
-            List<EventShortDto> eventShortDtos = new ArrayList<>();
-            for (Event event: events) {
-                eventShortDtos.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId())));
-            }
-            compilationDto.setEvents(eventShortDtos);
             compilationDtos.add(compilationDto);
         }
         return compilationDtos;
@@ -156,23 +160,27 @@ public class CompilationService {
                 .orElseThrow(() -> new CompilationNotFoundException("Compilation not found."));
         CompilationDto compilationDto = CompilationMapper.mapCompilationToCompilationDto(compilation);
         List<Long> eventIds = referenceRepository.findEventIdsByCompilationId(compilation.getId());
-        List<Event> events = eventRepository.findByIdIn(eventIds);
-        List<String> uris = new ArrayList<>();
-        for (Event event: events) {
-            uris.add(URI + event.getId());
+        if (!eventIds.isEmpty()) {
+            List<Event> events = eventRepository.findByIdIn(eventIds);
+            List<String> uris = new ArrayList<>();
+            for (Event event : events) {
+                uris.add(URI + event.getId());
+            }
+            List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
+                    LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
+            Map<Long, Long> hits = new HashMap<>();
+            for (ViewStatsDto viewStatsDto : stats) {
+                Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
+                hits.put(id, viewStatsDto.getHits());
+            }
+            List<EventShortDto> eventShortDtos = new ArrayList<>();
+            for (Event event : events) {
+                eventShortDtos.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId())));
+            }
+            compilationDto.setEvents(eventShortDtos);
+        } else {
+            compilationDto.setEvents(List.of());
         }
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.MIN.format(DATE_TIME_FORMATTER),
-                LocalDateTime.MAX.format(DATE_TIME_FORMATTER), uris, false);
-        Map<Long, Long> hits = new HashMap<>();
-        for (ViewStatsDto viewStatsDto: stats) {
-            Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
-            hits.put(id, viewStatsDto.getHits());
-        }
-        List<EventShortDto> eventShortDtos = new ArrayList<>();
-        for (Event event: events) {
-            eventShortDtos.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId())));
-        }
-        compilationDto.setEvents(eventShortDtos);
         return compilationDto;
     }
 }

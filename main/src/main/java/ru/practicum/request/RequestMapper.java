@@ -3,6 +3,7 @@ package ru.practicum.request;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import ru.practicum.request.dto.ParticipationRequestDto;
+import ru.practicum.request.model.ParticipationRequest;
 
 import java.util.ArrayList;
 import java.util.List;

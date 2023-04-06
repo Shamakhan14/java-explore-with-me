@@ -65,10 +65,10 @@ public class PrivateEventController {
 
     @PatchMapping("/{eventId}/requests")
     @ResponseStatus(HttpStatus.OK)
-    public List<ParticipationRequestDto> patchRequests(@PathVariable Long userId,
+    public EventRequestStatusUpdateResult patchRequests(@PathVariable Long userId,
                                                        @PathVariable Long eventId,
                                                        @RequestBody EventRequestStatusUpdateRequest request) {
-        List<ParticipationRequestDto> requestDtos = eventService.patchRequests(userId, eventId, request);
+        EventRequestStatusUpdateResult requestDtos = eventService.patchRequests(userId, eventId, request);
         log.info("Информация о запросах обновлена.");
         return requestDtos;
     }

@@ -33,7 +33,7 @@ public class AdminCompilationController {
     }
 
     @PatchMapping("/{compId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.OK)
     public CompilationDto patch(@RequestBody UpdateCompilationRequest request, @PathVariable Long compId) {
         CompilationDto compilationDto = compilationService.patch(request, compId);
         log.info("Подборка событий успешно обновлена.");

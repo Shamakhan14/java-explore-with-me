@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.dto.SortEvent;
 
@@ -23,7 +24,7 @@ public class PublicEventController {
     @GetMapping
     public List<EventShortDto> getAllPublic(@RequestParam(required = false) String text,
                                             @RequestParam(required = false) List<Long> categories,
-                                            @RequestParam(required = false) Boolean paid,
+                                            @RequestParam(defaultValue = "false") Boolean paid,
                                             @RequestParam(required = false)
                                             @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
                                             @RequestParam(required = false)
@@ -41,9 +42,9 @@ public class PublicEventController {
     }
 
     @GetMapping("/{eventId}")
-    public EventShortDto getPublic(@PathVariable Long eventId, HttpServletRequest request) {
+    public EventFullDto getPublic(@PathVariable Long eventId, HttpServletRequest request) {
         String ip = request.getRemoteAddr();
-        EventShortDto response = eventService.getPublic(eventId, ip);
+        EventFullDto response = eventService.getPublic(eventId, ip);
         log.info("Выведена информация о событии.");
         return response;
     }

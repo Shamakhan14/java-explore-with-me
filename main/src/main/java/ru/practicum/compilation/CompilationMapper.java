@@ -18,7 +18,7 @@ public class CompilationMapper {
 
     public static CompilationDto mapCompilationToCompilationDto(Compilation compilation) {
         CompilationDto compilationDto = new CompilationDto();
-        compilationDto.setId(compilationDto.getId());
+        compilationDto.setId(compilation.getId());
         compilationDto.setPinned(compilation.getPinned());
         compilationDto.setTitle(compilation.getTitle());
         return compilationDto;

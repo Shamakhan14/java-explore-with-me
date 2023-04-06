@@ -21,7 +21,7 @@ public class AdminEventController {
     private final EventService eventService;
 
     @GetMapping
-    public List<EventFullDto> search(@RequestParam(required = false) List<Long> userIds,
+    public List<EventFullDto> search(@RequestParam(required = false) List<Long> users,
                                      @RequestParam(required = false) List<State> states,
                                      @RequestParam(required = false) List<Long> categories,
                                      @RequestParam(required = false)
@@ -30,10 +30,7 @@ public class AdminEventController {
                                          @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
                                      @RequestParam(defaultValue = "0") Integer from,
                                      @RequestParam(defaultValue = "10") Integer size) {
-        if (userIds == null || userIds.isEmpty()) {
-            return List.of();
-        }
-        List<EventFullDto> response = eventService.search(userIds, states, categories, rangeStart, rangeEnd, from, size);
+        List<EventFullDto> response = eventService.search(users, states, categories, rangeStart, rangeEnd, from, size);
         log.info("Список событий выведен.");
         return response;
     }

@@ -40,7 +40,7 @@ public class HitClient {
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         HttpEntity<String> requestEntity = new HttpEntity<>(null, headers);
         ResponseEntity<Object> response = rest
-                .exchange(serverUrl + "/stats"/*?start={start}&end={end}&uris={uris}&unique={unique}"*/,
+                .exchange(serverUrl + "/stats?start={start}&end={end}&uris={uris}&unique={unique}",
                         HttpMethod.GET, requestEntity, Object.class, parameters);
         List<ViewStatsDto> result = objectMapper.convertValue(response.getBody(), new TypeReference<>(){});
         if (result == null) {

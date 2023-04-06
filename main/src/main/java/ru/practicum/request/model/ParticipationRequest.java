@@ -1,8 +1,7 @@
-package ru.practicum.request;
+package ru.practicum.request.model;
 
 import lombok.Getter;
 import lombok.Setter;
-import ru.practicum.event.model.State;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -23,5 +22,5 @@ public class ParticipationRequest {
     private Long requester;
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private State status;
+    private RequestState status;
 }

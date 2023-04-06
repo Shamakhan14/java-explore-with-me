@@ -1,6 +1,7 @@
 package ru.practicum.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,7 +29,7 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ApiError handleUniqueException(final ConstraintViolationException exception) {
+    public ApiError handleConstraintViolationException(final ConstraintViolationException exception) {
         log.info("{} : {}", exception.getClass().toString(), exception.getMessage());
         return new ApiError(StatusCode.CONFLICT,
                 "Integrity constraint has been violated.",
@@ -87,10 +88,10 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public ApiError handlePatchingPublishedEventException(final PatchingPublishedEventException exception) {
         log.info("{} : {}", exception.getClass().toString(), exception.getMessage());
-        return new ApiError(StatusCode.FORBIDDEN,
+        return new ApiError(StatusCode.CONFLICT,
                 "For the requested operation the conditions are not met.",
                 exception.getMessage(),
                 LocalDateTime.now().format(DATE_TIME_FORMATTER));
@@ -122,6 +123,36 @@ public class ErrorHandler {
         log.info("{} : {}", exception.getClass().toString(), exception.getMessage());
         return new ApiError(StatusCode.NOT_FOUND,
                 "The required object was not found.",
+                exception.getMessage(),
+                LocalDateTime.now().format(DATE_TIME_FORMATTER));
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError handleDataIntegrityViolationException(final DataIntegrityViolationException exception) {
+        log.info("{} : {}", exception.getClass().toString(), exception.getMessage());
+        return new ApiError(StatusCode.CONFLICT,
+                "Integrity constraint has been violated.",
+                exception.getMessage(),
+                LocalDateTime.now().format(DATE_TIME_FORMATTER));
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError handleDateConstraintException(final DateConstraintException exception) {
+        log.info("{} : {}", exception.getClass().toString(), exception.getMessage());
+        return new ApiError(StatusCode.CONFLICT,
+                "Integrity constraint has been violated.",
+                exception.getMessage(),
+                LocalDateTime.now().format(DATE_TIME_FORMATTER));
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError handleEventPublishingException(final EventPublishingException exception) {
+        log.info("{} : {}", exception.getClass().toString(), exception.getMessage());
+        return new ApiError(StatusCode.CONFLICT,
+                "Integrity constraint has been violated.",
                 exception.getMessage(),
                 LocalDateTime.now().format(DATE_TIME_FORMATTER));
     }

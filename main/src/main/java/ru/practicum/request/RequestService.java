@@ -11,6 +11,8 @@ import ru.practicum.exception.RequestNotFoundException;
 import ru.practicum.exception.RequestValidationException;
 import ru.practicum.exception.UserNotFoundException;
 import ru.practicum.request.dto.ParticipationRequestDto;
+import ru.practicum.request.model.ParticipationRequest;
+import ru.practicum.request.model.RequestState;
 import ru.practicum.user.UserRepository;
 
 import java.time.LocalDateTime;
@@ -44,9 +46,10 @@ public class RequestService {
         newRequest.setEvent(eventId);
         newRequest.setRequester(userId);
         if (event.getRequestModeration().equals(false)) {
-            newRequest.setStatus(State.PUBLISHED);
+            newRequest.setStatus(RequestState.CONFIRMED);
+            event.setConfirmedRequests(event.getConfirmedRequests() + 1);
         } else {
-            newRequest.setStatus(State.PENDING);
+            newRequest.setStatus(RequestState.PENDING);
         }
         ParticipationRequest request = requestRepository.save(newRequest);
         return RequestMapper.mapRequestToRequestDto(request);
@@ -61,11 +64,11 @@ public class RequestService {
         if (!request.getRequester().equals(userId)) {
             throw new RequestNotFoundException("Request with id = " + requestId + " was not found.");
         }
-        if (request.getStatus().equals(State.PUBLISHED)) {
+        if (request.getStatus().equals(RequestState.CONFIRMED)) {
             Event event = eventRepository.findById(request.getEvent()).get();
             event.setConfirmedRequests(event.getConfirmedRequests() - 1);
         }
-        request.setStatus(State.CANCELED);
+        request.setStatus(RequestState.CANCELED);
         return RequestMapper.mapRequestToRequestDto(request);
     }
 
