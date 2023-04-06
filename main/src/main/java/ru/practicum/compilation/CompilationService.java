@@ -41,8 +41,8 @@ public class CompilationService {
 
     @Transactional
     public CompilationDto post(NewCompilationDto newCompilationDto) {
-        Compilation compilation = compilationRepository.
-                save(CompilationMapper.mapNewCompilationDtoToCompilation(newCompilationDto));
+        Compilation compilation = compilationRepository
+                .save(CompilationMapper.mapNewCompilationDtoToCompilation(newCompilationDto));
         for (Long eventId: newCompilationDto.getEvents()) {
             CompilationReference reference = new CompilationReference();
             reference.setEventId(eventId);

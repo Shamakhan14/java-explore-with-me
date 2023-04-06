@@ -351,8 +351,8 @@ public class EventService {
         Pageable pageable = PageRequest.of(from / size, size, Sort.by(ASC, "id"));
         List<Event> events;
         if (onlyAvailable.equals(false)) {
-            events = eventRepository.findByAnnotationContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndCategory_IdInAndPaidAndEventDateBetweenAndState
-                    (text, text, categories, paid, rangeStart, rangeEnd, State.PUBLISHED, pageable);
+            events = eventRepository.findByAnnotationContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndCategory_IdInAndPaidAndEventDateBetweenAndState(
+                    text, text, categories, paid, rangeStart, rangeEnd, State.PUBLISHED, pageable);
         } else {
             events = eventRepository.searchPublicAvailable(text, categories, paid, rangeStart, rangeEnd,
                     State.PUBLISHED, pageable);
