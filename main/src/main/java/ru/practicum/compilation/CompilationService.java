@@ -6,25 +6,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.HitClient;
-import ru.practicum.ViewStatsDto;
 import ru.practicum.compilation.dto.CompilationDto;
 import ru.practicum.compilation.dto.NewCompilationDto;
 import ru.practicum.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.compilation.model.Compilation;
 import ru.practicum.compilation.model.CompilationReference;
-import ru.practicum.event.EventMapper;
-import ru.practicum.event.EventRepository;
-import ru.practicum.event.dto.EventShortDto;
-import ru.practicum.event.model.Event;
-import ru.practicum.exception.CompilationNotFoundException;
+import ru.practicum.exception.EntityNotFoundException;
+import ru.practicum.hit.HitService;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.springframework.data.domain.Sort.Direction.ASC;
 
@@ -34,50 +25,35 @@ import static org.springframework.data.domain.Sort.Direction.ASC;
 public class CompilationService {
     private final CompilationRepository compilationRepository;
     private final ReferenceRepository referenceRepository;
-    private final EventRepository eventRepository;
-    private final HitClient hitClient;
-    static final String URI = "/events/";
-    static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final HitService hitService;
 
     @Transactional
     public CompilationDto post(NewCompilationDto newCompilationDto) {
         Compilation compilation = compilationRepository
                 .save(CompilationMapper.mapNewCompilationDtoToCompilation(newCompilationDto));
-        for (Long eventId: newCompilationDto.getEvents()) {
-            CompilationReference reference = new CompilationReference();
-            reference.setEventId(eventId);
-            reference.setCompilationId(compilation.getId());
-            referenceRepository.save(reference);
+        if (newCompilationDto.getEvents() != null) {
+            List<CompilationReference> references = new ArrayList<>();
+            for (Long eventId : newCompilationDto.getEvents()) {
+                CompilationReference reference = new CompilationReference();
+                reference.setEventId(eventId);
+                reference.setCompilationId(compilation.getId());
+                references.add(reference);
+            }
+            referenceRepository.saveAll(references);
         }
         CompilationDto compilationDto = CompilationMapper.mapCompilationToCompilationDto(compilation);
         if (newCompilationDto.getEvents() == null || newCompilationDto.getEvents().isEmpty()) {
             compilationDto.setEvents(List.of());
             return compilationDto;
         }
-        List<Event> events = eventRepository.findByIdIn(newCompilationDto.getEvents());
-        List<String> uris = new ArrayList<>();
-        for (Event event: events) {
-            uris.add(URI + event.getId());
-        }
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
-                LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
-        Map<Long, Long> hits = new HashMap<>();
-        for (ViewStatsDto viewStatsDto: stats) {
-            Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
-            hits.put(id, viewStatsDto.getHits());
-        }
-        List<EventShortDto> eventShortDtos = new ArrayList<>();
-        for (Event event: events) {
-            eventShortDtos.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId())));
-        }
-        compilationDto.setEvents(eventShortDtos);
+        compilationDto.setEvents(hitService.giveEventShortDtosToCompilation(newCompilationDto.getEvents()));
         return compilationDto;
     }
 
     @Transactional
     public void delete(Long compId) {
         Compilation compilation = compilationRepository.findById(compId)
-                .orElseThrow(() -> new CompilationNotFoundException("Compilation not found."));
+                .orElseThrow(() -> new EntityNotFoundException("Compilation not found."));
         referenceRepository.deleteByCompilationId(compilation.getId());
         compilationRepository.deleteById(compilation.getId());
     }
@@ -85,7 +61,7 @@ public class CompilationService {
     @Transactional
     public CompilationDto patch(UpdateCompilationRequest request, Long compId) {
         Compilation compilation = compilationRepository.findById(compId)
-                .orElseThrow(() -> new CompilationNotFoundException("Compilation not found."));
+                .orElseThrow(() -> new EntityNotFoundException("Compilation not found."));
         if (request.getPinned() != null) {
             compilation.setPinned(request.getPinned());
         }
@@ -102,51 +78,24 @@ public class CompilationService {
             }
         }
         CompilationDto compilationDto = CompilationMapper.mapCompilationToCompilationDto(compilation);
-        List<Event> events = eventRepository.findByIdIn(request.getEvents());
-        List<String> uris = new ArrayList<>();
-        for (Event event: events) {
-            uris.add(URI + event.getId());
-        }
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
-                LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
-        Map<Long, Long> hits = new HashMap<>();
-        for (ViewStatsDto viewStatsDto: stats) {
-            Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
-            hits.put(id, viewStatsDto.getHits());
-        }
-        List<EventShortDto> eventShortDtos = new ArrayList<>();
-        for (Event event: events) {
-            eventShortDtos.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId())));
-        }
-        compilationDto.setEvents(eventShortDtos);
+        compilationDto.setEvents(hitService.giveEventShortDtosToCompilation(request.getEvents()));
         return compilationDto;
     }
 
     public List<CompilationDto> getAll(Boolean pinned, Integer from, Integer size) {
         Pageable pageable = PageRequest.of(from / size, size, Sort.by(ASC, "id"));
-        List<Compilation> compilations = compilationRepository.findByPinned(pinned, pageable);
+        List<Compilation> compilations;
+        if (pinned != null) {
+            compilations = compilationRepository.findByPinned(pinned, pageable);
+        } else {
+            compilations = compilationRepository.findAll(pageable).getContent();
+        }
         List<CompilationDto> compilationDtos = new ArrayList<>();
         for (Compilation compilation: compilations) {
             CompilationDto compilationDto = CompilationMapper.mapCompilationToCompilationDto(compilation);
             List<Long> eventIds = referenceRepository.findEventIdsByCompilationId(compilation.getId());
             if (!eventIds.isEmpty()) {
-                List<Event> events = eventRepository.findByIdIn(eventIds);
-                List<String> uris = new ArrayList<>();
-                for (Event event : events) {
-                    uris.add(URI + event.getId());
-                }
-                List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
-                        LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
-                Map<Long, Long> hits = new HashMap<>();
-                for (ViewStatsDto viewStatsDto : stats) {
-                    Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
-                    hits.put(id, viewStatsDto.getHits());
-                }
-                List<EventShortDto> eventShortDtos = new ArrayList<>();
-                for (Event event : events) {
-                    eventShortDtos.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId())));
-                }
-                compilationDto.setEvents(eventShortDtos);
+                compilationDto.setEvents(hitService.giveEventShortDtosToCompilation(eventIds));
             } else {
                 compilationDto.setEvents(List.of());
             }
@@ -157,27 +106,11 @@ public class CompilationService {
 
     public CompilationDto get(Long compId) {
         Compilation compilation = compilationRepository.findById(compId)
-                .orElseThrow(() -> new CompilationNotFoundException("Compilation not found."));
+                .orElseThrow(() -> new EntityNotFoundException("Compilation not found."));
         CompilationDto compilationDto = CompilationMapper.mapCompilationToCompilationDto(compilation);
         List<Long> eventIds = referenceRepository.findEventIdsByCompilationId(compilation.getId());
         if (!eventIds.isEmpty()) {
-            List<Event> events = eventRepository.findByIdIn(eventIds);
-            List<String> uris = new ArrayList<>();
-            for (Event event : events) {
-                uris.add(URI + event.getId());
-            }
-            List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
-                    LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
-            Map<Long, Long> hits = new HashMap<>();
-            for (ViewStatsDto viewStatsDto : stats) {
-                Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
-                hits.put(id, viewStatsDto.getHits());
-            }
-            List<EventShortDto> eventShortDtos = new ArrayList<>();
-            for (Event event : events) {
-                eventShortDtos.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId())));
-            }
-            compilationDto.setEvents(eventShortDtos);
+            compilationDto.setEvents(hitService.giveEventShortDtosToCompilation(eventIds));
         } else {
             compilationDto.setEvents(List.of());
         }

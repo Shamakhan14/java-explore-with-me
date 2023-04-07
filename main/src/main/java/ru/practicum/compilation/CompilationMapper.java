@@ -12,7 +12,7 @@ public class CompilationMapper {
     public static Compilation mapNewCompilationDtoToCompilation(NewCompilationDto newCompilationDto) {
         Compilation compilation = new Compilation();
         compilation.setTitle(newCompilationDto.getTitle());
-        compilation.setPinned(newCompilationDto.getPinned());
+        compilation.setPinned(newCompilationDto.isPinned());
         return compilation;
     }
 

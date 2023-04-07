@@ -6,6 +6,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.category.dto.CategoryDto;
 
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import java.util.List;
 
 @RestController
@@ -17,8 +19,8 @@ public class PublicCategoryController {
     private final CategoryService categoryService;
 
     @GetMapping
-    public List<CategoryDto> getAll(@RequestParam(defaultValue = "0") Integer from,
-                                    @RequestParam(defaultValue = "10") Integer size) {
+    public List<CategoryDto> getAll(@RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                    @RequestParam(defaultValue = "10") @Positive Integer size) {
         List<CategoryDto> response = categoryService.getAll(from, size);
         log.info("Выведен список категорий.");
         return response;

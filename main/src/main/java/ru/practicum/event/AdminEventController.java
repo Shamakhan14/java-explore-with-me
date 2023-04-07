@@ -9,6 +9,8 @@ import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.UpdateEventAdminRequest;
 import ru.practicum.event.model.State;
 
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,12 +26,10 @@ public class AdminEventController {
     public List<EventFullDto> search(@RequestParam(required = false) List<Long> users,
                                      @RequestParam(required = false) List<State> states,
                                      @RequestParam(required = false) List<Long> categories,
-                                     @RequestParam(required = false)
-                                         @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
-                                     @RequestParam(required = false)
-                                         @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
-                                     @RequestParam(defaultValue = "0") Integer from,
-                                     @RequestParam(defaultValue = "10") Integer size) {
+                                     @RequestParam(required = false) LocalDateTime rangeStart,
+                                     @RequestParam(required = false) LocalDateTime rangeEnd,
+                                     @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                     @RequestParam(defaultValue = "10") @Positive Integer size) {
         List<EventFullDto> response = eventService.search(users, states, categories, rangeStart, rangeEnd, from, size);
         log.info("Список событий выведен.");
         return response;

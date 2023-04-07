@@ -22,27 +22,26 @@ public class EventMapper {
         Event event = new Event();
         event.setAnnotation(newEventDto.getAnnotation());
         event.setCategory(category);
-        event.setConfirmedRequests(0);
         event.setCreatedOn(LocalDateTime.now());
         event.setDescription(newEventDto.getDescription());
         event.setEventDate(newEventDto.getEventDate());
         event.setInitiator(user);
         event.setLocationLat(newEventDto.getLocation().getLat());
         event.setLocationLon(newEventDto.getLocation().getLon());
-        event.setPaid(newEventDto.getPaid());
+        event.setPaid(newEventDto.isPaid());
         event.setParticipantLimit(newEventDto.getParticipantLimit());
         event.setPublishedOn(null);
-        event.setRequestModeration(newEventDto.getRequestModeration());
+        event.setRequestModeration(newEventDto.isRequestModeration());
         event.setState(State.PENDING);
         event.setTitle(newEventDto.getTitle());
         return event;
     }
 
-    public static EventFullDto mapEventToEventFullDto(Event event, Long views) {
+    public static EventFullDto mapEventToEventFullDto(Event event, Long views, Integer confirmedRequests) {
         return new EventFullDto(
                 event.getAnnotation(),
                 CategoryMapper.mapCategoryToCategoryDto(event.getCategory()),
-                event.getConfirmedRequests(),
+                confirmedRequests,
                 event.getCreatedOn(),
                 event.getDescription(),
                 event.getEventDate(),
@@ -59,11 +58,11 @@ public class EventMapper {
         );
     }
 
-    public static EventShortDto mapEventToEventShortDto(Event event, Long views) {
+    public static EventShortDto mapEventToEventShortDto(Event event, Long views, Integer confirmedRequests) {
         return new EventShortDto(
                 event.getAnnotation(),
                 CategoryMapper.mapCategoryToCategoryDto(event.getCategory()),
-                event.getConfirmedRequests(),
+                confirmedRequests,
                 event.getEventDate(),
                 event.getId(),
                 UserMapper.mapUserToUserShortDto(event.getInitiator()),

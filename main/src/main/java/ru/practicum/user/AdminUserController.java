@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import java.util.List;
 
 @RestController
@@ -36,8 +38,8 @@ public class AdminUserController {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<UserDto> get(@RequestParam(required = false) List<Long> ids,
-                             @RequestParam(defaultValue = "0") Integer from,
-                             @RequestParam(defaultValue = "10") Integer size) {
+                             @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                             @RequestParam(defaultValue = "10") @Positive Integer size) {
         List<UserDto> userDtos = userService.get(ids, from, size);
         log.info("Выведен список пользователей.");
         return userDtos;

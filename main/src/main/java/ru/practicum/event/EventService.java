@@ -1,6 +1,6 @@
 package ru.practicum.event;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -15,6 +15,7 @@ import ru.practicum.event.dto.*;
 import ru.practicum.event.model.Event;
 import ru.practicum.event.model.State;
 import ru.practicum.exception.*;
+import ru.practicum.hit.HitService;
 import ru.practicum.request.model.ParticipationRequest;
 import ru.practicum.request.RequestMapper;
 import ru.practicum.request.RequestRepository;
@@ -30,17 +31,29 @@ import java.util.*;
 import static org.springframework.data.domain.Sort.Direction.ASC;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EventService {
+    private final HitService hitService;
     private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final RequestRepository requestRepository;
     private final HitClient hitClient;
+    private final String app;
     static final String URI = "/events/";
-    static final String APP = "main-event-service";
     static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    public EventService(EventRepository eventRepository, CategoryRepository categoryRepository,
+                        UserRepository userRepository, RequestRepository requestRepository, HitClient hitClient,
+                        HitService hitService, @Value("${app}") String app) {
+        this.hitService = hitService;
+        this.eventRepository = eventRepository;
+        this.categoryRepository = categoryRepository;
+        this.userRepository = userRepository;
+        this.requestRepository = requestRepository;
+        this.hitClient = hitClient;
+        this.app = app;
+    }
 
     @Transactional
     public EventFullDto post(Long userId, NewEventDto newEventDto) {
@@ -49,65 +62,55 @@ public class EventService {
             throw new DateConstraintException("Field: eventDate. Error: incorrect event date.");
         }
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User with id = " + userId + " was not found."));
+                .orElseThrow(() -> new EntityNotFoundException("User with id = " + userId + " was not found."));
         Category category = categoryRepository.findById(newEventDto.getCategory())
-                .orElseThrow(() -> new CategoryNotFoundException("Field: category. Error: category not found."));
+                .orElseThrow(() -> new EntityNotFoundException("Field: category. Error: category not found."));
         Event event = eventRepository.save(EventMapper.mapNewEventDtoToEvent(newEventDto, category, user));
-        return EventMapper.mapEventToEventFullDto(event, 0L);
+        return EventMapper.mapEventToEventFullDto(event, 0L, 0);
     }
 
     public List<EventShortDto> getAll(Long userId, Integer from, Integer size) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User with id = " + userId + " was not found."));
+        if (!userRepository.existsById(userId)) {
+            throw new EntityNotFoundException("User with id = " + userId + " was not found.");
+        }
         Pageable pageable = PageRequest.of(from / size, size, Sort.by(ASC, "id"));
         List<Event> events = eventRepository.findByInitiator_Id(userId, pageable);
         if (events.isEmpty()) {
             return List.of();
         }
-        List<String> uris = new ArrayList<>();
-        for (Event event: events) {
-            uris.add(URI + event.getId().toString());
-        }
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
-                LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
-        Map<Long, Long> hits = new HashMap<>();
-        for (ViewStatsDto viewStatsDto: stats) {
-            Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
-            hits.put(id, viewStatsDto.getHits());
-        }
+        Map<Long, Long> hits = hitService.getHits(events);
         List<EventShortDto> result = new ArrayList<>();
         for (Event event: events) {
-            result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId())));
+            List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
+                    RequestState.CONFIRMED);
+            result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()), requests.size()));
         }
         return result;
     }
 
     public EventFullDto get(Long userId, Long eventId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User with id = " + userId + " was not found."));
+        if (!userRepository.existsById(userId)) {
+            throw new EntityNotFoundException("User with id = " + userId + " was not found.");
+        }
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EventNotFoundException("Event with id = " + eventId + " was not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Event with id = " + eventId + " was not found"));
         if (!event.getInitiator().getId().equals(userId)) {
-            throw new EventNotFoundException("Event with id = " + eventId + " was not found");
+            throw new EntityNotFoundException("Event with id = " + eventId + " was not found");
         }
-        String fullUri = URI + eventId;
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
-                LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), List.of(fullUri), false);
-        if (stats.isEmpty()) {
-            return EventMapper.mapEventToEventFullDto(event, 0L);
-        } else {
-            return EventMapper.mapEventToEventFullDto(event, stats.get(0).getHits());
-        }
+        List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
+                RequestState.CONFIRMED);
+        return EventMapper.mapEventToEventFullDto(event, hitService.getHit(event), requests.size());
     }
 
     @Transactional
     public EventFullDto patch(UpdateEventUserRequest request, Long userId, Long eventId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User with id = " + userId + " was not found."));
+        if (!userRepository.existsById(userId)) {
+            throw new EntityNotFoundException("User with id = " + userId + " was not found.");
+        }
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EventNotFoundException("Event with id = " + eventId + " was not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Event with id = " + eventId + " was not found"));
         if (!event.getInitiator().getId().equals(userId)) {
-            throw new EventNotFoundException("Event with id = " + eventId + " was not found");
+            throw new EntityNotFoundException("Event with id = " + eventId + " was not found");
         }
         if (event.getState().equals(State.PUBLISHED)) {
             throw new PatchingPublishedEventException("Only pending or canceled events can be changed.");
@@ -124,7 +127,7 @@ public class EventService {
         }
         if (request.getCategory() != null) {
             Category category = categoryRepository.findById(request.getCategory())
-                    .orElseThrow(() -> new CategoryNotFoundException("Field: category. Error: category not found."));
+                    .orElseThrow(() -> new EntityNotFoundException("Field: category. Error: category not found."));
             event.setCategory(category);
         }
         if (request.getDescription() != null && !request.getDescription().isBlank()) {
@@ -153,23 +156,19 @@ public class EventService {
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             event.setTitle(request.getTitle());
         }
-        String fullUri = URI + eventId;
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
-                LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), List.of(fullUri), false);
-        if (stats.isEmpty()) {
-            return EventMapper.mapEventToEventFullDto(event, 0L);
-        } else {
-            return EventMapper.mapEventToEventFullDto(event, stats.get(0).getHits());
-        }
+        List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
+                RequestState.CONFIRMED);
+        return EventMapper.mapEventToEventFullDto(event, hitService.getHit(event), requests.size());
     }
 
     public List<ParticipationRequestDto> getRequests(Long userId, Long eventId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User with id = " + userId + " was not found."));
+        if (!userRepository.existsById(userId)) {
+            throw new EntityNotFoundException("User with id = " + userId + " was not found.");
+        }
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EventNotFoundException("Event with id = " + eventId + " was not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Event with id = " + eventId + " was not found"));
         if (!event.getInitiator().getId().equals(userId)) {
-            throw new EventNotFoundException("Event with id = " + eventId + " was not found");
+            throw new EntityNotFoundException("Event with id = " + eventId + " was not found");
         }
         List<ParticipationRequest> requests = requestRepository.findByEvent(eventId);
         if (requests.isEmpty()) {
@@ -182,12 +181,16 @@ public class EventService {
     public EventRequestStatusUpdateResult patchRequests(Long userId,
                                                        Long eventId,
                                                        EventRequestStatusUpdateRequest requestUpdate) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User with id = " + userId + " was not found."));
+        if (!userRepository.existsById(userId)) {
+            throw new EntityNotFoundException("User with id = " + userId + " was not found.");
+        }
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EventNotFoundException("Event with id = " + eventId + " was not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Event with id = " + eventId + " was not found"));
+        List<ParticipationRequest> confirmedRequests = requestRepository.findByEventAndStatus(eventId,
+                RequestState.CONFIRMED);
+        Integer confRequests = confirmedRequests.size();
         if (!event.getInitiator().getId().equals(userId)) {
-            throw new EventNotFoundException("Event with id = " + eventId + " was not found");
+            throw new EntityNotFoundException("Event with id = " + eventId + " was not found");
         }
         if (requestUpdate.getRequestIds().isEmpty()) {
             return new EventRequestStatusUpdateResult();
@@ -208,13 +211,13 @@ public class EventService {
                 rejectedRequests.add(RequestMapper.mapRequestToRequestDto(requests.get(i)));
             } else {
                 if (event.getParticipantLimit() != 0 &&
-                        event.getConfirmedRequests().equals(event.getParticipantLimit())) {
+                        confRequests.equals(event.getParticipantLimit())) {
                     throw new RequestValidationException("Can't approve request. Participation limit reached.");
                 }
                 requests.get(i).setStatus(RequestState.CONFIRMED);
                 approvedRequests.add(RequestMapper.mapRequestToRequestDto(requests.get(i)));
-                event.setConfirmedRequests(event.getConfirmedRequests() + 1);
-                if (event.getConfirmedRequests().equals(event.getParticipantLimit()) && i != requests.size() - 1) {
+                confRequests++;
+                if (confRequests.equals(event.getParticipantLimit()) && i != requests.size() - 1) {
                     for (int j = i + 1; j < requests.size(); j++) {
                         requests.get(j).setStatus(RequestState.REJECTED);
                         rejectedRequests.add(RequestMapper.mapRequestToRequestDto(requests.get(j)));
@@ -250,20 +253,12 @@ public class EventService {
         if (events.isEmpty()) {
             return List.of();
         }
-        List<String> uris = new ArrayList<>();
-        for (Event event: events) {
-            uris.add(URI + event.getId());
-        }
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
-                LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
-        Map<Long, Long> hits = new HashMap<>();
-        for (ViewStatsDto viewStatsDto: stats) {
-            Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
-            hits.put(id, viewStatsDto.getHits());
-        }
+        Map<Long, Long> hits = hitService.getHits(events);
         List<EventFullDto> result = new ArrayList<>();
         for (Event event: events) {
-            result.add(EventMapper.mapEventToEventFullDto(event, hits.get(event.getId())));
+            List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
+                    RequestState.CONFIRMED);
+            result.add(EventMapper.mapEventToEventFullDto(event, hits.get(event.getId()), requests.size()));
         }
         return result;
     }
@@ -271,7 +266,7 @@ public class EventService {
     @Transactional
     public EventFullDto updateAdmin(Long eventId, UpdateEventAdminRequest request) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EventNotFoundException("Event with id = " + eventId + " was not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Event with id = " + eventId + " was not found"));
         LocalDateTime limit = LocalDateTime.now().plusHours(1);
         if (request.getEventDate() != null) {
             if (request.getEventDate().isBefore(limit)) {
@@ -284,7 +279,7 @@ public class EventService {
         }
         if (request.getCategory() != null) {
             Category category = categoryRepository.findById(request.getCategory())
-                    .orElseThrow(() -> new CategoryNotFoundException("Field: category. Error: category not found."));
+                    .orElseThrow(() -> new EntityNotFoundException("Field: category. Error: category not found."));
             event.setCategory(category);
         }
         if (request.getDescription() != null && !request.getDescription().isBlank()) {
@@ -319,14 +314,9 @@ public class EventService {
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             event.setTitle(request.getTitle());
         }
-        String fullUri = URI + eventId;
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
-                LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), List.of(fullUri), false);
-        if (stats.isEmpty()) {
-            return EventMapper.mapEventToEventFullDto(event, 0L);
-        } else {
-            return EventMapper.mapEventToEventFullDto(event, stats.get(0).getHits());
-        }
+        List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
+                RequestState.CONFIRMED);
+        return EventMapper.mapEventToEventFullDto(event, hitService.getHit(event), requests.size());
     }
 
     public List<EventShortDto> getAllPublic(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
@@ -350,30 +340,36 @@ public class EventService {
         }
         Pageable pageable = PageRequest.of(from / size, size, Sort.by(ASC, "id"));
         List<Event> events;
-        if (onlyAvailable.equals(false)) {
+        /*if (onlyAvailable.equals(false)) {
             events = eventRepository.findByAnnotationContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndCategory_IdInAndPaidAndEventDateBetweenAndState(
                     text, text, categories, paid, rangeStart, rangeEnd, State.PUBLISHED, pageable);
         } else {
             events = eventRepository.searchPublicAvailable(text, categories, paid, rangeStart, rangeEnd,
                     State.PUBLISHED, pageable);
+        }*/
+        events = eventRepository.findByAnnotationContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndCategory_IdInAndPaidAndEventDateBetweenAndState(
+                text, text, categories, paid, rangeStart, rangeEnd, State.PUBLISHED, pageable);
+        if (onlyAvailable.equals(true)) {
+            List<Event> eventsToRemove = new ArrayList<>();
+            for (Event event: events) {
+                List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
+                        RequestState.CONFIRMED);
+                if (event.getParticipantLimit() != 0 && requests.size() == event.getParticipantLimit()) {
+                    eventsToRemove.add(event);
+                }
+            }
+            events.removeAll(eventsToRemove);
         }
+
         if (events.isEmpty()) {
             return List.of();
         }
-        List<String> uris = new ArrayList<>();
-        for (Event event: events) {
-            uris.add(URI + event.getId());
-        }
-        List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
-                LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), uris, false);
-        Map<Long, Long> hits = new HashMap<>();
-        for (ViewStatsDto viewStatsDto: stats) {
-            Long id = Long.parseLong(viewStatsDto.getUri().split("/")[2]);
-            hits.put(id, viewStatsDto.getHits());
-        }
+        Map<Long, Long> hits = hitService.getHits(events);
         List<EventShortDto> result = new ArrayList<>();
         for (Event event: events) {
-            result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId())));
+            List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
+                    RequestState.CONFIRMED);
+            result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()), requests.size()));
         }
         if (sort != null) {
             if (sort.equals(SortEvent.EVENT_DATE)) {
@@ -382,26 +378,28 @@ public class EventService {
                 Collections.sort(result, Comparator.comparing(EventShortDto::getViews));
             }
         }
-        EndpointHitDto endpointHitDto = new EndpointHitDto(APP, "/events", ip, LocalDateTime.now());
+        EndpointHitDto endpointHitDto = new EndpointHitDto(app, "/events", ip, LocalDateTime.now());
         hitClient.addHit(endpointHitDto);
         return result;
     }
 
     public EventFullDto getPublic(Long eventId, String ip) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EventNotFoundException("Event with id = " + eventId + " was not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Event with id = " + eventId + " was not found"));
         if (!event.getState().equals(State.PUBLISHED)) {
-            throw new EventNotFoundException("Event with id = " + eventId + " was not found");
+            throw new EntityNotFoundException("Event with id = " + eventId + " was not found");
         }
         String fullUri = URI + eventId;
         List<ViewStatsDto> stats = hitClient.get(LocalDateTime.now().minusYears(10).format(DATE_TIME_FORMATTER),
                 LocalDateTime.now().plusYears(10).format(DATE_TIME_FORMATTER), List.of(fullUri), false);
-        EndpointHitDto endpointHitDto = new EndpointHitDto(APP, URI + event.getId(), ip, LocalDateTime.now());
+        EndpointHitDto endpointHitDto = new EndpointHitDto(app, URI + event.getId(), ip, LocalDateTime.now());
         hitClient.addHit(endpointHitDto);
+        List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
+                RequestState.CONFIRMED);
         if (stats.isEmpty()) {
-            return EventMapper.mapEventToEventFullDto(event, 0L);
+            return EventMapper.mapEventToEventFullDto(event, 0L, requests.size());
         } else {
-            return EventMapper.mapEventToEventFullDto(event, stats.get(0).getHits());
+            return EventMapper.mapEventToEventFullDto(event, stats.get(0).getHits(), requests.size());
         }
     }
 }

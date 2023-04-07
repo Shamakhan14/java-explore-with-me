@@ -9,11 +9,12 @@ import ru.practicum.compilation.dto.CompilationDto;
 import ru.practicum.compilation.dto.NewCompilationDto;
 import ru.practicum.compilation.dto.UpdateCompilationRequest;
 
+import javax.validation.Valid;
+
 @RestController
 @RequestMapping(path = "/admin/compilations")
 @RequiredArgsConstructor
 @Slf4j
-@Validated
 public class AdminCompilationController {
     private final CompilationService compilationService;
 
@@ -34,7 +35,7 @@ public class AdminCompilationController {
 
     @PatchMapping("/{compId}")
     @ResponseStatus(HttpStatus.OK)
-    public CompilationDto patch(@RequestBody UpdateCompilationRequest request, @PathVariable Long compId) {
+    public CompilationDto patch(@RequestBody @Valid UpdateCompilationRequest request, @PathVariable Long compId) {
         CompilationDto compilationDto = compilationService.patch(request, compId);
         log.info("Подборка событий успешно обновлена.");
         return compilationDto;

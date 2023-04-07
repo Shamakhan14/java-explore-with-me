@@ -10,7 +10,7 @@ import ru.practicum.category.dto.CategoryDto;
 import ru.practicum.category.dto.NewCategoryDto;
 import ru.practicum.event.EventRepository;
 import ru.practicum.event.model.Event;
-import ru.practicum.exception.CategoryNotFoundException;
+import ru.practicum.exception.EntityNotFoundException;
 import ru.practicum.exception.ForbiddenCategoryDeleteException;
 
 import java.util.List;
@@ -33,15 +33,16 @@ public class CategoryService {
     @Transactional
     public CategoryDto patch(CategoryDto categoryDto, Long catId) {
         Category category = categoryRepository.findById(catId)
-                .orElseThrow(() -> new CategoryNotFoundException("Category with id = " + catId + " was not found."));
+                .orElseThrow(() -> new EntityNotFoundException("Category with id = " + catId + " was not found."));
         category.setName(categoryDto.getName());
         return CategoryMapper.mapCategoryToCategoryDto(category);
     }
 
     @Transactional
     public void delete(Long catId) {
-        categoryRepository.findById(catId)
-                .orElseThrow(() -> new CategoryNotFoundException("Category with id = " + catId + " was not found."));
+        if (!categoryRepository.existsById(catId)) {
+            throw new EntityNotFoundException("Category with id = " + catId + " was not found.");
+        }
         List<Event> events = eventRepository.findByCategory_Id(catId);
         if (!events.isEmpty()) {
             throw new ForbiddenCategoryDeleteException("The category is not empty.");
@@ -57,7 +58,7 @@ public class CategoryService {
 
     public CategoryDto get(Long catId) {
         Category category = categoryRepository.findById(catId)
-                .orElseThrow(() -> new CategoryNotFoundException("Category with id = " + catId + " was not found."));
+                .orElseThrow(() -> new EntityNotFoundException("Category with id = " + catId + " was not found."));
         return CategoryMapper.mapCategoryToCategoryDto(category);
     }
 }

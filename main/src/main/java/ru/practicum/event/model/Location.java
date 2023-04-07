@@ -4,10 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotNull;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 public class Location {
-    private float lat;
-    private float lon;
+    @NotNull
+    private Float lat;
+    @NotNull
+    private Float lon;
 }

@@ -13,7 +13,6 @@ import ru.practicum.category.dto.Patch;
 @RequestMapping(path = "/admin/categories")
 @RequiredArgsConstructor
 @Slf4j
-@Validated
 public class AdminCategoryController {
     private final CategoryService categoryService;
 
@@ -30,7 +29,7 @@ public class AdminCategoryController {
     public CategoryDto patch(@RequestBody @Validated(Patch.class) CategoryDto categoryDto,
                              @PathVariable Long catId) {
         CategoryDto response = categoryService.patch(categoryDto, catId);
-        log.info("Категория успешно обновлена.");
+        log.info("Категория с ID {} успешно обновлена.", catId);
         return response;
     }
 
@@ -38,6 +37,6 @@ public class AdminCategoryController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long catId) {
         categoryService.delete(catId);
-        log.info("Категория успешно удалена.");
+        log.info("Категория с ID {} успешно удалена.", catId);
     }
 }
