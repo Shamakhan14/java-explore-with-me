@@ -337,6 +337,8 @@ public class EventService {
                                             Integer from, Integer size, String ip) {
         if (text == null || text.isBlank()) {
             text = "";
+        } else {
+            text = text.toLowerCase();
         }
         if (categories == null || categories.isEmpty()) {
             categories = List.of();
@@ -365,7 +367,8 @@ public class EventService {
             }
             events.removeAll(eventsToRemove);
         }
-
+        EndpointHitDto endpointHitDto = new EndpointHitDto(app, "/events", ip, LocalDateTime.now());
+        hitClient.addHit(endpointHitDto);
         if (events.isEmpty()) {
             return List.of();
         }
@@ -388,8 +391,6 @@ public class EventService {
                 Collections.sort(result, Comparator.comparing(EventShortDto::getViews));
             }
         }
-        EndpointHitDto endpointHitDto = new EndpointHitDto(app, "/events", ip, LocalDateTime.now());
-        hitClient.addHit(endpointHitDto);
         return result;
     }
 

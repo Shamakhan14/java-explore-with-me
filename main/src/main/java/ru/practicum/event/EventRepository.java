@@ -29,15 +29,17 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     @Query(value = "select e from Event e " +
             "left join User u on e.initiator.id = u.id " +
-            "where (lower(e.annotation) like lower(concat('%', ?1,'%')) or " +
-            "lower(e.description) like lower(concat('%', ?1,'%'))) and " +
-            "e.category.id in ?2 and " +
-            "e.paid = ?3 and " +
-            "e.eventDate between ?4 and ?5 and " +
-            "e.state = ?6 " +
+            "left join Category c on e.category.id = c.id " +
+            "where (lower(e.annotation) like :text or " +
+            "lower(e.description) like :text) and " +
+            "e.category.id in :categories and " +
+            "e.paid = :paid and " +
+            "e.eventDate between :rangeStart and :rangeEnd and " +
+            "e.state = :state " +
             "group by e.id")
-    List<Event> searchAll(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
-                          LocalDateTime rangeEnd, State state, Pageable pageable);
+    List<Event> searchAll(@Param("text") String text, @Param("categories") List<Long> categories,
+                          @Param("paid") Boolean paid, @Param("rangeStart") LocalDateTime rangeStart,
+                          @Param("rangeEnd") LocalDateTime rangeEnd, @Param("state") State state, Pageable pageable);
 
     List<Event> findByIdIn(List<Long> ids);
 }
