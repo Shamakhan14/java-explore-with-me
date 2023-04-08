@@ -14,4 +14,6 @@ public interface ReferenceRepository extends JpaRepository<CompilationReference,
             "where c.compilationId = ?1 " +
             "group by c.eventId")
     List<Long> findEventIdsByCompilationId(Long compilationId);
+
+    List<CompilationReference> findByCompilationIdIn(List<Long> compilationIds);
 }

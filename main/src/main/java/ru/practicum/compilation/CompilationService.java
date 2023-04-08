@@ -15,7 +15,10 @@ import ru.practicum.exception.EntityNotFoundException;
 import ru.practicum.hit.HitService;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.domain.Sort.Direction.ASC;
 
@@ -31,7 +34,7 @@ public class CompilationService {
     public CompilationDto post(NewCompilationDto newCompilationDto) {
         Compilation compilation = compilationRepository
                 .save(CompilationMapper.mapNewCompilationDtoToCompilation(newCompilationDto));
-        if (newCompilationDto.getEvents() != null) {
+        if (newCompilationDto.getEvents() != null && !newCompilationDto.getEvents().isEmpty()) {
             List<CompilationReference> references = new ArrayList<>();
             for (Long eventId : newCompilationDto.getEvents()) {
                 CompilationReference reference = new CompilationReference();
@@ -70,12 +73,14 @@ public class CompilationService {
         }
         if (request.getEvents() != null && !request.getEvents().isEmpty()) {
             referenceRepository.deleteByCompilationId(compilation.getId());
+            List<CompilationReference> references = new ArrayList<>();
             for (Long eventId: request.getEvents()) {
                 CompilationReference reference = new CompilationReference();
                 reference.setEventId(eventId);
                 reference.setCompilationId(compilation.getId());
-                referenceRepository.save(reference);
+                references.add(reference);
             }
+            referenceRepository.saveAll(references);
         }
         CompilationDto compilationDto = CompilationMapper.mapCompilationToCompilationDto(compilation);
         compilationDto.setEvents(hitService.giveEventShortDtosToCompilation(request.getEvents()));
@@ -90,12 +95,26 @@ public class CompilationService {
         } else {
             compilations = compilationRepository.findAll(pageable).getContent();
         }
+        if (compilations.isEmpty()) {
+            return List.of();
+        }
+        List<Long> compilationIds = compilations.stream()
+                .map(Compilation::getId)
+                .collect(Collectors.toList());
+        List<CompilationReference> references = referenceRepository.findByCompilationIdIn(compilationIds);
+        Map<Long, List<Long>> sortedEventIds = new HashMap<>();
+        for (CompilationReference reference: references) {
+            if (!sortedEventIds.containsKey(reference.getCompilationId())) {
+                sortedEventIds.put(reference.getCompilationId(), new ArrayList<>());
+            }
+            sortedEventIds.get(reference.getCompilationId()).add(reference.getEventId());
+        }
         List<CompilationDto> compilationDtos = new ArrayList<>();
         for (Compilation compilation: compilations) {
             CompilationDto compilationDto = CompilationMapper.mapCompilationToCompilationDto(compilation);
-            List<Long> eventIds = referenceRepository.findEventIdsByCompilationId(compilation.getId());
-            if (!eventIds.isEmpty()) {
-                compilationDto.setEvents(hitService.giveEventShortDtosToCompilation(eventIds));
+            if (sortedEventIds.containsKey(compilation.getId())) {
+                compilationDto.setEvents(hitService
+                        .giveEventShortDtosToCompilation(sortedEventIds.get(compilation.getId())));
             } else {
                 compilationDto.setEvents(List.of());
             }

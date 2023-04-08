@@ -134,8 +134,12 @@ public class EventService {
             event.setDescription(request.getDescription());
         }
         if (request.getLocation() != null) {
-            event.setLocationLat(request.getLocation().getLat());
-            event.setLocationLon(request.getLocation().getLon());
+            if (request.getLocation().getLat() != null) {
+                event.setLocationLat(request.getLocation().getLat());
+            }
+            if (request.getLocation().getLon() != null) {
+                event.setLocationLon(request.getLocation().getLon());
+            }
         }
         if (request.getPaid() != null) {
             event.setPaid(request.getPaid());
@@ -254,11 +258,16 @@ public class EventService {
             return List.of();
         }
         Map<Long, Long> hits = hitService.getHits(events);
+        List<Long> eventIds = new ArrayList<>();
+        for (Event event: events) {
+            eventIds.add(event.getId());
+        }
+        Map<Long, Integer> confRequests = requestRepository
+                .findConfirmedRequestsForEvents(eventIds,RequestState.CONFIRMED);
         List<EventFullDto> result = new ArrayList<>();
         for (Event event: events) {
-            List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
-                    RequestState.CONFIRMED);
-            result.add(EventMapper.mapEventToEventFullDto(event, hits.get(event.getId()), requests.size()));
+            result.add(EventMapper.mapEventToEventFullDto(event, hits.get(event.getId()),
+                    confRequests.get(event.getId())));
         }
         return result;
     }
@@ -286,8 +295,12 @@ public class EventService {
             event.setDescription(request.getDescription());
         }
         if (request.getLocation() != null) {
-            event.setLocationLat(request.getLocation().getLat());
-            event.setLocationLon(request.getLocation().getLon());
+            if (request.getLocation().getLat() != null) {
+                event.setLocationLat(request.getLocation().getLat());
+            }
+            if (request.getLocation().getLon() != null) {
+                event.setLocationLon(request.getLocation().getLon());
+            }
         }
         if (request.getPaid() != null) {
             event.setPaid(request.getPaid());
@@ -340,15 +353,7 @@ public class EventService {
         }
         Pageable pageable = PageRequest.of(from / size, size, Sort.by(ASC, "id"));
         List<Event> events;
-        /*if (onlyAvailable.equals(false)) {
-            events = eventRepository.findByAnnotationContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndCategory_IdInAndPaidAndEventDateBetweenAndState(
-                    text, text, categories, paid, rangeStart, rangeEnd, State.PUBLISHED, pageable);
-        } else {
-            events = eventRepository.searchPublicAvailable(text, categories, paid, rangeStart, rangeEnd,
-                    State.PUBLISHED, pageable);
-        }*/
-        events = eventRepository.findByAnnotationContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndCategory_IdInAndPaidAndEventDateBetweenAndState(
-                text, text, categories, paid, rangeStart, rangeEnd, State.PUBLISHED, pageable);
+        events = eventRepository.searchAll(text, categories, paid, rangeStart, rangeEnd, State.PUBLISHED, pageable);
         if (onlyAvailable.equals(true)) {
             List<Event> eventsToRemove = new ArrayList<>();
             for (Event event: events) {
@@ -365,11 +370,16 @@ public class EventService {
             return List.of();
         }
         Map<Long, Long> hits = hitService.getHits(events);
+        List<Long> eventIds = new ArrayList<>();
+        for (Event event: events) {
+            eventIds.add(event.getId());
+        }
+        Map<Long, Integer> confRequests = requestRepository
+                .findConfirmedRequestsForEvents(eventIds,RequestState.CONFIRMED);
         List<EventShortDto> result = new ArrayList<>();
         for (Event event: events) {
-            List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
-                    RequestState.CONFIRMED);
-            result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()), requests.size()));
+            result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()),
+                    confRequests.get(event.getId())));
         }
         if (sort != null) {
             if (sort.equals(SortEvent.EVENT_DATE)) {
