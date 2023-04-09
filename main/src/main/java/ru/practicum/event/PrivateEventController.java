@@ -74,4 +74,13 @@ public class PrivateEventController {
         log.info("Информация о запросах обновлена.");
         return requestDtos;
     }
+
+    @PostMapping("/{eventId}/comment")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommentDto postComment(@PathVariable Long userId, @PathVariable Long eventId,
+                                  @RequestBody @Validated NewCommentDto newCommentDto) {
+        CommentDto commentDto = eventService.postComment(userId, eventId, newCommentDto);
+        log.info("Комментарий добавлен.");
+        return commentDto;
+    }
 }

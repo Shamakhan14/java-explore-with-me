@@ -10,6 +10,7 @@ import ru.practicum.event.model.State;
 import ru.practicum.user.dto.UserShortDto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,4 +35,5 @@ public class EventFullDto {
     private State state;
     private String title;
     private Long views;
+    private List<CommentDto> comments;
 }
