@@ -27,6 +27,7 @@ import ru.practicum.user.UserRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.domain.Sort.Direction.ASC;
 
@@ -80,10 +81,13 @@ public class EventService {
         }
         Map<Long, Long> hits = hitService.getHits(events);
         List<EventShortDto> result = new ArrayList<>();
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList());
+        Map<Long, Integer> requests = requestRepository.findConfirmedRequestsForEvents(eventIds,
+                RequestState.CONFIRMED);
         for (Event event: events) {
-            List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
-                    RequestState.CONFIRMED);
-            result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()), requests.size()));
+            result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()), requests.get(event.getId())));
         }
         return result;
     }
@@ -358,10 +362,13 @@ public class EventService {
         events = eventRepository.searchAll(text, categories, paid, rangeStart, rangeEnd, State.PUBLISHED, pageable);
         if (onlyAvailable.equals(true)) {
             List<Event> eventsToRemove = new ArrayList<>();
+            List<Long> eventIds = events.stream()
+                    .map(Event::getId)
+                    .collect(Collectors.toList());
+            Map<Long, Integer> requests = requestRepository.findConfirmedRequestsForEvents(eventIds,
+                    RequestState.CONFIRMED);
             for (Event event: events) {
-                List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
-                        RequestState.CONFIRMED);
-                if (event.getParticipantLimit() != 0 && requests.size() == event.getParticipantLimit()) {
+                if (event.getParticipantLimit() != 0 && requests.get(event.getId()).equals(event.getParticipantLimit())) {
                     eventsToRemove.add(event);
                 }
             }
