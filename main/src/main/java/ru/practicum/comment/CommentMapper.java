@@ -1,10 +1,10 @@
-package ru.practicum.event;
+package ru.practicum.comment;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import ru.practicum.event.dto.CommentDto;
-import ru.practicum.event.dto.NewCommentDto;
-import ru.practicum.event.model.Comment;
+import ru.practicum.comment.dto.CommentDto;
+import ru.practicum.comment.dto.NewCommentDto;
+import ru.practicum.comment.model.Comment;
 import ru.practicum.user.User;
 
 import java.time.LocalDateTime;
@@ -24,7 +24,8 @@ public class CommentMapper {
     }
 
     public static CommentDto mapCommentToCommentDto(Comment comment) {
-        return new CommentDto(comment.getId(), comment.getText(), comment.getCreator().getName(), comment.getCreated());
+        return new CommentDto(comment.getId(), comment.getText(), comment.getCreator().getName(), comment.getCreated(),
+                comment.getChanged());
     }
 
     public static List<CommentDto> mapCommentsToCommentDtos(List<Comment> comments) {

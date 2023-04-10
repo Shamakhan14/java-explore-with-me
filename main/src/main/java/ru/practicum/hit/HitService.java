@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.HitClient;
 import ru.practicum.ViewStatsDto;
+import ru.practicum.comment.CommentRepository;
 import ru.practicum.event.EventMapper;
 import ru.practicum.event.EventRepository;
 import ru.practicum.event.dto.EventShortDto;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class HitService {
     private final EventRepository eventRepository;
     private final RequestRepository requestRepository;
+    private final CommentRepository commentRepository;
     private final HitClient hitClient;
     static final String URI = "/events/";
     static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -32,10 +34,12 @@ public class HitService {
     public List<EventShortDto> giveEventShortDtosToCompilation(List<Long> eventIds) {
         List<Event> events = eventRepository.findByIdIn(eventIds);
         Map<Long, Long> hits = getHits(events);
+        Map<Long, Integer> comments = commentRepository.findCommentAmoutForEvents(eventIds);
         List<EventShortDto> eventShortDtos = new ArrayList<>();
         for (Event event: events) {
             List<ParticipationRequest> requests = requestRepository.findByEvent(event.getId());
-            eventShortDtos.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()), requests.size()));
+            eventShortDtos.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()), requests.size(),
+                    comments.getOrDefault(event.getId(), 0)));
         }
         return eventShortDtos;
     }

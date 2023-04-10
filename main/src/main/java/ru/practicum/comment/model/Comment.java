@@ -1,4 +1,4 @@
-package ru.practicum.event.model;
+package ru.practicum.comment.model;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -24,4 +24,6 @@ public class Comment {
     private User creator;
     @Column(name = "created")
     private LocalDateTime created;
+    @Column(name = "changed")
+    private LocalDateTime changed;
 }

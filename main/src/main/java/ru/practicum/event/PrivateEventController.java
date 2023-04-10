@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.comment.dto.CommentDto;
+import ru.practicum.comment.dto.NewCommentDto;
 import ru.practicum.event.dto.*;
 import ru.practicum.request.dto.ParticipationRequestDto;
 
@@ -73,14 +75,5 @@ public class PrivateEventController {
         EventRequestStatusUpdateResult requestDtos = eventService.patchRequests(userId, eventId, request);
         log.info("Информация о запросах обновлена.");
         return requestDtos;
-    }
-
-    @PostMapping("/{eventId}/comment")
-    @ResponseStatus(HttpStatus.CREATED)
-    public CommentDto postComment(@PathVariable Long userId, @PathVariable Long eventId,
-                                  @RequestBody @Validated NewCommentDto newCommentDto) {
-        CommentDto commentDto = eventService.postComment(userId, eventId, newCommentDto);
-        log.info("Комментарий добавлен.");
-        return commentDto;
     }
 }

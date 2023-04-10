@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import ru.practicum.category.Category;
 import ru.practicum.category.CategoryMapper;
-import ru.practicum.event.dto.CommentDto;
+import ru.practicum.comment.dto.CommentDto;
 import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.dto.NewEventDto;
@@ -40,7 +40,7 @@ public class EventMapper {
     }
 
     public static EventFullDto mapEventToEventFullDto(Event event, Long views, Integer confirmedRequests,
-                                                      List<CommentDto> commentDtos) {
+                                                      Integer commentDtos) {
         return new EventFullDto(
                 event.getAnnotation(),
                 CategoryMapper.mapCategoryToCategoryDto(event.getCategory()),
@@ -62,7 +62,8 @@ public class EventMapper {
         );
     }
 
-    public static EventShortDto mapEventToEventShortDto(Event event, Long views, Integer confirmedRequests) {
+    public static EventShortDto mapEventToEventShortDto(Event event, Long views, Integer confirmedRequests,
+                                                        Integer comments) {
         return new EventShortDto(
                 event.getAnnotation(),
                 CategoryMapper.mapCategoryToCategoryDto(event.getCategory()),
@@ -72,7 +73,8 @@ public class EventMapper {
                 UserMapper.mapUserToUserShortDto(event.getInitiator()),
                 event.getPaid(),
                 event.getTitle(),
-                views
+                views,
+                comments
         );
     }
 }

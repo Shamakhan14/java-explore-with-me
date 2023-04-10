@@ -22,18 +22,20 @@
 							"const source = JSON.parse(pm.request.body.raw);\r",
 							"const target = pm.response.json();\r",
 							"\r",
-							"pm.test(\"Событие должно содержать поля: id, title, annotation, category, paid, eventDate, initiator, description, participantLimit, state, createdOn, location, requestModeration\", function () {\r",
+							"pm.test(\"Событие должно содержать поля: id, text, authorName, created, changed\", function () {\r",
 							"pm.expect(target).to.have.property('id');\r",
 							"pm.expect(target).to.have.property('text');\r",
 							"pm.expect(target).to.have.property('authorName');\r",
 							"pm.expect(target).to.have.property('created');\r",
+							"pm.expect(target).to.have.property('changed');\r",
 							"});\r",
 							"\r",
-							"pm.test(\"Поля не должны равняться null\", function () {\r",
+							"pm.test(\"Поля, кроме changed, не должны равняться null\", function () {\r",
 							"    pm.expect(target.id).to.not.be.null;\r",
 							"    pm.expect(target.text).to.not.be.null;\r",
 							"    pm.expect(target.authorName).to.not.be.null;\r",
 							"    pm.expect(target.created).to.not.be.null;\r",
+							"    pm.expect(target.changed).to.be.null;\r",
 							"});"
 						],
 						"type": "text/javascript"
@@ -53,7 +55,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/users/1/events/1/comment",
+					"raw": "http://localhost:8080/users/1/events/1/comments",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -64,14 +66,81 @@
 						"1",
 						"events",
 						"1",
-						"comment"
+						"comments"
 					]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "Получение информации о мероприятии с комментариями",
+			"name": "Изменение комментария",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+							"    pm.response.to.be.ok;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"const source = JSON.parse(pm.request.body.raw);\r",
+							"const target = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Событие должно содержать поля: id, text, authorName, created, changed\", function () {\r",
+							"pm.expect(target).to.have.property('id');\r",
+							"pm.expect(target).to.have.property('text');\r",
+							"pm.expect(target).to.have.property('authorName');\r",
+							"pm.expect(target).to.have.property('created');\r",
+							"pm.expect(target).to.have.property('changed');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Поля не должны равняться null\", function () {\r",
+							"    pm.expect(target.id).to.not.be.null;\r",
+							"    pm.expect(target.text).to.not.be.null;\r",
+							"    pm.expect(target.authorName).to.not.be.null;\r",
+							"    pm.expect(target.created).to.not.be.null;\r",
+							"    pm.expect(target.changed).to.not.be.null;\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"text\":\"Even cooler, I'm in!\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/users/1/events/1/comments/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"1",
+						"events",
+						"1",
+						"comments",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Получение комментария по ID",
 			"event": [
 				{
 					"listen": "test",
@@ -86,8 +155,19 @@
 							"const source = pm.collectionVariables.get('response');\r",
 							"const target = pm.response.json();\r",
 							"\r",
-							"pm.test(\"Событие должно содержать поля: comments\", function () {\r",
-							"pm.expect(target).to.have.property('comments');\r",
+							"pm.test(\"Событие должно содержать поля: id, text, authorName, created, changed\", function () {\r",
+							"pm.expect(target).to.have.property('id');\r",
+							"pm.expect(target).to.have.property('text');\r",
+							"pm.expect(target).to.have.property('authorName');\r",
+							"pm.expect(target).to.have.property('created');\r",
+							"pm.expect(target).to.have.property('changed');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Поля, кроме changed, не должны равняться null\", function () {\r",
+							"    pm.expect(target.id).to.not.be.null;\r",
+							"    pm.expect(target.text).to.not.be.null;\r",
+							"    pm.expect(target.authorName).to.not.be.null;\r",
+							"    pm.expect(target.created).to.not.be.null;\r",
 							"});"
 						],
 						"type": "text/javascript"
@@ -98,7 +178,60 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8080/events/1",
+					"raw": "http://localhost:8080/comments/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"comments",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Получение списка комментариев по ID ивента",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+							"    pm.response.to.be.ok;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"const source = pm.collectionVariables.get('response');\r",
+							"const target = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Событие должно содержать поля: id, text, authorName, created, changed\", function () {\r",
+							"pm.expect(target[0]).to.have.property('id');\r",
+							"pm.expect(target[0]).to.have.property('text');\r",
+							"pm.expect(target[0]).to.have.property('authorName');\r",
+							"pm.expect(target[0]).to.have.property('created');\r",
+							"pm.expect(target[0]).to.have.property('changed');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Поля, кроме changed, не должны равняться null\", function () {\r",
+							"    pm.expect(target[0].id).to.not.be.null;\r",
+							"    pm.expect(target[0].text).to.not.be.null;\r",
+							"    pm.expect(target[0].authorName).to.not.be.null;\r",
+							"    pm.expect(target[0].created).to.not.be.null;\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/events/1/comments",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -106,6 +239,44 @@
 					"port": "8080",
 					"path": [
 						"events",
+						"1",
+						"comments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Удаление комментария по ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+							"    pm.response.to.have.status(204);;  \r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/users/1/events/1/comments/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"1",
+						"events",
+						"1",
+						"comments",
 						"1"
 					]
 				}

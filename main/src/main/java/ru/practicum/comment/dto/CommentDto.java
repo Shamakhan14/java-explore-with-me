@@ -1,4 +1,4 @@
-package ru.practicum.event.dto;
+package ru.practicum.comment.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,4 +14,5 @@ public class CommentDto {
     private String text;
     private String authorName;
     private LocalDateTime created;
+    private LocalDateTime changed;
 }
