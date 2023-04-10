@@ -36,7 +36,7 @@ public class CommentService {
                 .orElseThrow(() -> new EntityNotFoundException("User with id = " + userId + " was not found."));
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Event with id = " + eventId + " was not found"));
-        if (!event.getState().equals(State.PUBLISHED)) {
+        if (!event.getState().equals(State.PUBLISHED) && !userId.equals(event.getInitiator().getId())) {
             throw new CommentPublishException("The event hasn't been published yet.");
         }
         Comment comment = commentRepository.save(CommentMapper.mapNewCommentDtoToComment(newCommentDto, user, eventId));
@@ -69,7 +69,9 @@ public class CommentService {
         if (!eventRepository.existsById(eventId)) {
             throw new EntityNotFoundException("Event with id = " + eventId + " was not found");
         }
-        if (!commentRepository.existsById(commentId)) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new EntityNotFoundException("Comment with id = " + commentId + " was not found."));
+        if (!userId.equals(comment.getCreator().getId())) {
             throw new EntityNotFoundException("Comment with id = " + commentId + " was not found.");
         }
         commentRepository.deleteById(commentId);
@@ -90,5 +92,13 @@ public class CommentService {
         Pageable pageable = PageRequest.of(from / size, size, Sort.by(ASC, "id"));
         List<Comment> comments = commentRepository.findByEventId(eventId, pageable);
         return CommentMapper.mapCommentsToCommentDtos(comments);
+    }
+
+    @Transactional
+    public void deleteAdmin(Long commentId) {
+        if (!commentRepository.existsById(commentId)) {
+            throw new EntityNotFoundException("Comment with id = " + commentId + " was not found.");
+        }
+        commentRepository.deleteById(commentId);
     }
 }
