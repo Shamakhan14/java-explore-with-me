@@ -11,7 +11,9 @@ import ru.practicum.HitClient;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.category.Category;
 import ru.practicum.category.CategoryRepository;
+import ru.practicum.comment.CommentRepository;
 import ru.practicum.event.dto.*;
+import ru.practicum.comment.model.Comment;
 import ru.practicum.event.model.Event;
 import ru.practicum.event.model.State;
 import ru.practicum.exception.*;
@@ -39,6 +41,7 @@ public class EventService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final RequestRepository requestRepository;
+    private final CommentRepository commentRepository;
     private final HitClient hitClient;
     private final String app;
     static final String URI = "/events/";
@@ -46,12 +49,14 @@ public class EventService {
 
     public EventService(EventRepository eventRepository, CategoryRepository categoryRepository,
                         UserRepository userRepository, RequestRepository requestRepository, HitClient hitClient,
-                        HitService hitService, @Value("${app}") String app) {
+                        CommentRepository commentRepository, HitService hitService,
+                        @Value("${app}") String app) {
         this.hitService = hitService;
         this.eventRepository = eventRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.requestRepository = requestRepository;
+        this.commentRepository = commentRepository;
         this.hitClient = hitClient;
         this.app = app;
     }
@@ -67,7 +72,7 @@ public class EventService {
         Category category = categoryRepository.findById(newEventDto.getCategory())
                 .orElseThrow(() -> new EntityNotFoundException("Field: category. Error: category not found."));
         Event event = eventRepository.save(EventMapper.mapNewEventDtoToEvent(newEventDto, category, user));
-        return EventMapper.mapEventToEventFullDto(event, 0L, 0);
+        return EventMapper.mapEventToEventFullDto(event, 0L, 0, 0);
     }
 
     public List<EventShortDto> getAll(Long userId, Integer from, Integer size) {
@@ -86,8 +91,11 @@ public class EventService {
                 .collect(Collectors.toList());
         Map<Long, Integer> requests = requestRepository.findConfirmedRequestsForEvents(eventIds,
                 RequestState.CONFIRMED);
+        Map<Long, Integer> comments = commentRepository.findCommentAmoutForEvents(eventIds);
         for (Event event: events) {
-            result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()), requests.get(event.getId())));
+            result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()),
+                    requests.getOrDefault(event.getId(), 0),
+                    comments.getOrDefault(event.getId(), 0)));
         }
         return result;
     }
@@ -103,7 +111,9 @@ public class EventService {
         }
         List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
                 RequestState.CONFIRMED);
-        return EventMapper.mapEventToEventFullDto(event, hitService.getHit(event), requests.size());
+        List<Comment> comments = commentRepository.findByEventId(eventId);
+        return EventMapper.mapEventToEventFullDto(event, hitService.getHit(event), requests.size(),
+                comments.size());
     }
 
     @Transactional
@@ -166,7 +176,9 @@ public class EventService {
         }
         List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
                 RequestState.CONFIRMED);
-        return EventMapper.mapEventToEventFullDto(event, hitService.getHit(event), requests.size());
+        List<Comment> comments = commentRepository.findByEventId(eventId);
+        return EventMapper.mapEventToEventFullDto(event, hitService.getHit(event), requests.size(),
+                comments.size());
     }
 
     public List<ParticipationRequestDto> getRequests(Long userId, Long eventId) {
@@ -269,9 +281,10 @@ public class EventService {
         Map<Long, Integer> confRequests = requestRepository
                 .findConfirmedRequestsForEvents(eventIds,RequestState.CONFIRMED);
         List<EventFullDto> result = new ArrayList<>();
+        Map<Long, Integer> comments = commentRepository.findCommentAmoutForEvents(eventIds);
         for (Event event: events) {
             result.add(EventMapper.mapEventToEventFullDto(event, hits.get(event.getId()),
-                    confRequests.get(event.getId())));
+                    confRequests.get(event.getId()), comments.getOrDefault(event.getId(), 0)));
         }
         return result;
     }
@@ -333,7 +346,9 @@ public class EventService {
         }
         List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
                 RequestState.CONFIRMED);
-        return EventMapper.mapEventToEventFullDto(event, hitService.getHit(event), requests.size());
+        List<Comment> comments = commentRepository.findByEventId(eventId);
+        return EventMapper.mapEventToEventFullDto(event, hitService.getHit(event), requests.size(),
+                comments.size());
     }
 
     public List<EventShortDto> getAllPublic(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
@@ -387,9 +402,10 @@ public class EventService {
         Map<Long, Integer> confRequests = requestRepository
                 .findConfirmedRequestsForEvents(eventIds,RequestState.CONFIRMED);
         List<EventShortDto> result = new ArrayList<>();
+        Map<Long, Integer> comments = commentRepository.findCommentAmoutForEvents(eventIds);
         for (Event event: events) {
             result.add(EventMapper.mapEventToEventShortDto(event, hits.get(event.getId()),
-                    confRequests.get(event.getId())));
+                    confRequests.get(event.getId()), comments.getOrDefault(event.getId(), 0)));
         }
         if (sort != null) {
             if (sort.equals(SortEvent.EVENT_DATE)) {
@@ -414,10 +430,11 @@ public class EventService {
         hitClient.addHit(endpointHitDto);
         List<ParticipationRequest> requests = requestRepository.findByEventAndStatus(event.getId(),
                 RequestState.CONFIRMED);
+        List<Comment> comments = commentRepository.findByEventId(eventId);
         if (stats.isEmpty()) {
-            return EventMapper.mapEventToEventFullDto(event, 0L, requests.size());
+            return EventMapper.mapEventToEventFullDto(event, 0L, requests.size(), comments.size());
         } else {
-            return EventMapper.mapEventToEventFullDto(event, stats.get(0).getHits(), requests.size());
+            return EventMapper.mapEventToEventFullDto(event, stats.get(0).getHits(), requests.size(), comments.size());
         }
     }
 }

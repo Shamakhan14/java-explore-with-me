@@ -37,7 +37,8 @@ public class EventMapper {
         return event;
     }
 
-    public static EventFullDto mapEventToEventFullDto(Event event, Long views, Integer confirmedRequests) {
+    public static EventFullDto mapEventToEventFullDto(Event event, Long views, Integer confirmedRequests,
+                                                      Integer commentDtos) {
         return new EventFullDto(
                 event.getAnnotation(),
                 CategoryMapper.mapCategoryToCategoryDto(event.getCategory()),
@@ -54,11 +55,13 @@ public class EventMapper {
                 event.getRequestModeration(),
                 event.getState(),
                 event.getTitle(),
-                views
+                views,
+                commentDtos
         );
     }
 
-    public static EventShortDto mapEventToEventShortDto(Event event, Long views, Integer confirmedRequests) {
+    public static EventShortDto mapEventToEventShortDto(Event event, Long views, Integer confirmedRequests,
+                                                        Integer comments) {
         return new EventShortDto(
                 event.getAnnotation(),
                 CategoryMapper.mapCategoryToCategoryDto(event.getCategory()),
@@ -68,7 +71,8 @@ public class EventMapper {
                 UserMapper.mapUserToUserShortDto(event.getInitiator()),
                 event.getPaid(),
                 event.getTitle(),
-                views
+                views,
+                comments
         );
     }
 }

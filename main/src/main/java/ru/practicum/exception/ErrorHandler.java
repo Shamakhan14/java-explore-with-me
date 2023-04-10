@@ -126,4 +126,14 @@ public class ErrorHandler {
                 exception.getMessage(),
                 LocalDateTime.now().format(DATE_TIME_FORMATTER));
     }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError handleCommentPublishException(final CommentPublishException exception) {
+        log.info("{} : {}", exception.getClass().toString(), exception.getMessage());
+        return new ApiError(HttpStatus.CONFLICT,
+                "For the requested operation the conditions are not met.",
+                exception.getMessage(),
+                LocalDateTime.now().format(DATE_TIME_FORMATTER));
+    }
 }
