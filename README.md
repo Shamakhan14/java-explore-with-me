@@ -1,4 +1,24 @@
-# java-explore-with-me
-Template repository for ExploreWithMe project.
+# Explore with me
 
-Пулл реквест: https://github.com/Shamakhan14/java-explore-with-me/pull/5
+## Описание
+
+![Пример сайта](https://github.com/Shamakhan14/java-explore-with-me/blob/main/images/site_example.png)
+
+Учебный проект бэкенд приложения для организации мероприятий. Он позволяет регистрироваться на сайте, создавать и редактировать проводимые мероприятия, создавать и модерировать заявки на участие, а также оставлять комментарии. Администратор имеет возможность модерировать данные пользователей, мероприятий и комментариев.
+
+**Стек**: REST-сервис с использованием Spring Boot, Maven, Lombok, взаимодействие с БД (PostgeSQL) с помощью JDBC.
+
+## БД
+
+Приложение состоит из двух модулей: основного и модуля статистики. Основной модуль осуществляет большую чатсь логики программы по регистрации пользователей, созданию событий и оставлению комментариев. Модуль статистики собирает информацию об обращении к некоторым эндпоинтам приложения и позволяет собирать такие данные, как количество просмотров события.
+
+Спецификация к [основному](https://github.com/Shamakhan14/java-explore-with-me/blob/main/ewm-main-service-spec.json) модулю и модулю [статистики](https://github.com/Shamakhan14/java-explore-with-me/blob/main/ewm-stats-service-spec.json) лежит в корневой папке.
+
+Архитектура БД представлена на схемах.
+Схема БД основного модуля:
+
+![Схема БД основного модуля](https://github.com/Shamakhan14/java-explore-with-me/blob/main/images/main_schema.png)
+
+Схема БД модуля статистики:
+
+![Схема БД модуля статистики](https://github.com/Shamakhan14/java-explore-with-me/blob/main/images/stats-schema.png)
